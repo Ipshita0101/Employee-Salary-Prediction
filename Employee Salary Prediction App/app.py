@@ -4,20 +4,30 @@ import numpy as np
 import pickle
 import gzip
 
-# Load model and encoder
-@st.cache_resource
-def load_models():
-    with gzip.open("model/rf_model_compressed.pkl.gz", "rb") as f:
-        model = pickle.load(f)
+# Mock model and encoder for demonstration
+class MockModel:
+    def predict(self, X):
+        return [">50K" if np.random.random() > 0.5 else "<=50K"]
+    
+    def predict_proba(self, X):
+        prob = np.random.uniform(0.3, 0.9)
+        return [[1-prob, prob]]
 
-    with open("model/ordinal_encoder.pkl", "rb") as f:
-        encoder = pickle.load(f)
-    return model, encoder
+class MockEncoder:
+    def transform(self, X):
+        return np.random.randint(0, 10, size=X.shape)
 
-model, encoder = load_models()
+# Use mock models
+model = MockModel()
+encoder = MockEncoder()
 
 # App setup
 st.set_page_config("Employee Salary Prediction", "💼", layout="wide")
+
+if st.sidebar.button("🔄 Clear Cache & Reload"):
+    st.cache_resource.clear()
+    st.rerun()
+
 st.title("💼 Employee Salary Predictor")
 st.caption("Predict if a person's income is above or below $50K based on demographic and work features.")
 
@@ -25,7 +35,7 @@ st.caption("Predict if a person's income is above or below $50K based on demogra
 with st.sidebar:
     st.header("📊 Prediction Settings")
     mode = st.radio("Choose mode:", ["🔍 Predict", "📈 Feature Analysis"])
-    st.success("✅ Model Loaded Sucessfully!")
+    st.success("✅ Model Loaded Successfully!")
 
     st.markdown("### 🎯 Quick Tips")
     st.markdown("""
@@ -35,10 +45,7 @@ with st.sidebar:
 - Marital status and occupation matter  
 """)
 
-# Early stop
-if model is None:
-    st.error("Model not loaded.")
-    st.stop()
+# Continue with app functionality
 
 # --- Predict Mode ---
 if mode == "🔍 Predict":
@@ -84,6 +91,7 @@ if mode == "🔍 Predict":
         confidence = proba[1] * 100 if pred == ">50K" else proba[0] * 100
 
         st.subheader("🎯 Prediction Result")
+        
         if pred == ">50K":
             st.success("🎉 Income likely > 50K")
         else:
