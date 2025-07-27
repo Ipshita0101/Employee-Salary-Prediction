@@ -7,12 +7,25 @@ import gzip
 # Load model and encoder
 @st.cache_resource
 def load_models():
-    with gzip.open("model/rf_model_compressed.pkl.gz", "rb") as f:
-        model = pickle.load(f)
+    try:
+        with gzip.open("model/rf_model_compressed.pkl.gz", "rb") as f:
+            model = pickle.load(f)
 
-    with open("model/ordinal_encoder.pkl", "rb") as f:
-        encoder = pickle.load(f)
-    return model, encoder
+        with open("model/ordinal_encoder.pkl", "rb") as f:
+            encoder = pickle.load(f)
+        return model, encoder
+    except FileNotFoundError as e:
+        st.error(f"Model files not found: {str(e)}")
+        st.info("Please ensure the following files exist:")
+        st.code("""
+model/
+├── rf_model_compressed.pkl.gz
+└── ordinal_encoder.pkl
+        """)
+        return None, None
+    except Exception as e:
+        st.error(f"Error loading models: {str(e)}")
+        return None, None
 
 model, encoder = load_models()
 
@@ -25,7 +38,11 @@ st.caption("Predict if a person's income is above or below $50K based on demogra
 with st.sidebar:
     st.header("📊 Prediction Settings")
     mode = st.radio("Choose mode:", ["🔍 Predict", "📈 Feature Analysis"])
-    st.success("✅ Model Loaded Sucessfully!")
+    
+    if model is not None and encoder is not None:
+        st.success("✅ Model Loaded Successfully!")
+    else:
+        st.error("❌ Model Loading Failed!")
 
     st.markdown("### 🎯 Quick Tips")
     st.markdown("""
@@ -36,8 +53,16 @@ with st.sidebar:
 """)
 
 # Early stop
-if model is None:
-    st.error("Model not loaded.")
+if model is None or encoder is None:
+    st.error("❌ Models not loaded successfully. Cannot proceed with predictions.")
+    st.info("💡 **To fix this issue:**")
+    st.markdown("""
+    1. Create a `model/` folder in your app directory
+    2. Place your trained model files in this folder:
+       - `rf_model_compressed.pkl.gz` (your trained RandomForest model)
+       - `ordinal_encoder.pkl` (your fitted encoder)
+    3. Restart the Streamlit app
+    """)
     st.stop()
 
 # --- Predict Mode ---
