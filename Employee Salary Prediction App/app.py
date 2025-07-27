@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import pickle
 import gzip
-import matplotlib.pyplot as plt
 
 # Mock model and encoder for demonstration
 class MockModel:
@@ -133,13 +132,7 @@ if mode == "📈 Feature Analysis":
         # Age Distribution
         st.subheader("Age Distribution")
         if age_hist is not None and not age_hist.empty and 'Age' in age_hist.columns:
-            fig_age, ax_age = plt.subplots(figsize=(10, 6))
-            ax_age.hist(age_hist['Age'], bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-            ax_age.set_xlabel('Age')
-            ax_age.set_ylabel('Frequency')
-            ax_age.set_title('Age Distribution')
-            ax_age.grid(True, alpha=0.3)
-            st.pyplot(fig_age)
+            st.histogram(age_hist['Age'], bins=30)
         else:
             st.warning("Age distribution data not available or 'Age' column not found")
 
@@ -170,22 +163,7 @@ if mode == "📈 Feature Analysis":
         'Correlation with Income': [0.23, 0.34, 0.18, 0.22, -0.05]
     })
     
-    fig_corr, ax_corr = plt.subplots(figsize=(10, 6))
-    bars = ax_corr.barh(correlation_data['Feature'], correlation_data['Correlation with Income'])
-    
-    # Color bars based on correlation strength
-    for i, bar in enumerate(bars):
-        if correlation_data['Correlation with Income'].iloc[i] >= 0.2:
-            bar.set_color('green')
-        elif correlation_data['Correlation with Income'].iloc[i] >= 0.1:
-            bar.set_color('orange')
-        else:
-            bar.set_color('red')
-    
-    ax_corr.set_xlabel('Correlation Coefficient')
-    ax_corr.set_title('Feature Correlation with High Income')
-    ax_corr.grid(True, alpha=0.3)
-    st.pyplot(fig_corr)
+    st.bar_chart(correlation_data.set_index('Feature')['Correlation with Income'])
 
     # Income Distribution by Category
     st.subheader("💰 Income Distribution by Category")
