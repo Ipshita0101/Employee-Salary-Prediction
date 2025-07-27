@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import gzip
+import matplotlib.pyplot as plt
 
 # Mock model and encoder for demonstration
 class MockModel:
@@ -44,8 +45,6 @@ with st.sidebar:
 - Capital gains/losses are strong indicators  
 - Marital status and occupation matter  
 """)
-
-# Continue with app functionality
 
 # --- Predict Mode ---
 if mode == "🔍 Predict":
@@ -122,18 +121,30 @@ if mode == "🔍 Predict":
 # --- Feature Analysis ---
 if mode == "📈 Feature Analysis":
     st.subheader("📈 Feature Impact Analysis")
+    
+    # Generate sample data for analysis
+    ages = np.random.normal(40, 12, 1000)
+    ages = ages[(ages >= 18) & (ages <= 90)]
+    age_hist = pd.DataFrame({'Age': ages})
+    
     col1, col2 = st.columns(2)
 
     with col1:
-        st.write("**Age Distribution**")
-        # Simulate Age Distribution
-        ages = np.random.normal(40, 12, 1000)
-        ages = ages[(ages >= 18) & (ages <= 90)]
-        age_hist = pd.DataFrame({'Age': ages})
-        st.histogram(age_hist['Age'], bins=30)
+        # Age Distribution
+        st.subheader("Age Distribution")
+        if age_hist is not None and not age_hist.empty and 'Age' in age_hist.columns:
+            fig_age, ax_age = plt.subplots(figsize=(10, 6))
+            ax_age.hist(age_hist['Age'], bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+            ax_age.set_xlabel('Age')
+            ax_age.set_ylabel('Frequency')
+            ax_age.set_title('Age Distribution')
+            ax_age.grid(True, alpha=0.3)
+            st.pyplot(fig_age)
+        else:
+            st.warning("Age distribution data not available or 'Age' column not found")
 
     with col2:
-        st.write("**Education vs High Income Probability**")
+        st.subheader("Education vs High Income Probability")
         # Simulate Education Impact
         edu_impact = pd.DataFrame({
             'Education': ['Doctorate', 'Masters', 'Bachelors', 'HS-grad'],
@@ -151,6 +162,50 @@ if mode == "📈 Feature Analysis":
         st.metric("High Income Rate", "24.8%", "1.2%")
     with col5:
         st.metric("Avg Hours/Week", "40.4 hrs", "-0.8")
+
+    # Correlation Analysis
+    st.subheader("🔗 Feature Correlations")
+    correlation_data = pd.DataFrame({
+        'Feature': ['Age', 'Education Years', 'Hours/Week', 'Capital Gain', 'Capital Loss'],
+        'Correlation with Income': [0.23, 0.34, 0.18, 0.22, -0.05]
+    })
+    
+    fig_corr, ax_corr = plt.subplots(figsize=(10, 6))
+    bars = ax_corr.barh(correlation_data['Feature'], correlation_data['Correlation with Income'])
+    
+    # Color bars based on correlation strength
+    for i, bar in enumerate(bars):
+        if correlation_data['Correlation with Income'].iloc[i] >= 0.2:
+            bar.set_color('green')
+        elif correlation_data['Correlation with Income'].iloc[i] >= 0.1:
+            bar.set_color('orange')
+        else:
+            bar.set_color('red')
+    
+    ax_corr.set_xlabel('Correlation Coefficient')
+    ax_corr.set_title('Feature Correlation with High Income')
+    ax_corr.grid(True, alpha=0.3)
+    st.pyplot(fig_corr)
+
+    # Income Distribution by Category
+    st.subheader("💰 Income Distribution by Category")
+    col6, col7 = st.columns(2)
+    
+    with col6:
+        st.write("**By Education Level**")
+        edu_income = pd.DataFrame({
+            'Education': ['HS-grad', 'Some-college', 'Bachelors', 'Masters', 'Doctorate'],
+            'High_Income_Percentage': [15, 22, 42, 65, 78]
+        })
+        st.bar_chart(edu_income.set_index('Education')['High_Income_Percentage'])
+    
+    with col7:
+        st.write("**By Work Class**")
+        work_income = pd.DataFrame({
+            'Work_Class': ['Private', 'Self-emp-not-inc', 'Self-emp-inc', 'Federal-gov', 'Local-gov'],
+            'High_Income_Percentage': [22, 18, 45, 32, 28]
+        })
+        st.bar_chart(work_income.set_index('Work_Class')['High_Income_Percentage'])
 
 # Footer
 st.markdown("---")
