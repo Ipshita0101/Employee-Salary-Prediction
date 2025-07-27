@@ -24,7 +24,6 @@ model, encoder = load_models()
 # App setup
 st.set_page_config("Employee Salary Prediction", "💼", layout="wide")
 
-# Add cache clear option for development
 if st.sidebar.button("🔄 Clear Cache & Reload"):
     st.cache_resource.clear()
     st.rerun()
@@ -50,7 +49,7 @@ with st.sidebar:
 - Marital status and occupation matter  
 """)
 
-# Early stop - only if both model and encoder are None
+# Early stop
 if model is None or encoder is None:
     st.error("❌ **Model files are required to run this application.**")
     
