@@ -4,8 +4,8 @@ import numpy as np
 import pickle
 import gzip
 import matplotlib.pyplot as plt
-#import plotly.express as px
-#import plotly.graph_objects as go
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Load model and encoder
 @st.cache_resource
