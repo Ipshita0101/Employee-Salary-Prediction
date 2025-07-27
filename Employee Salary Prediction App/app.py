@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import gzip
-import plotly.express as px
+#import plotly.express as px
 import plotly.graph_objects as go
 
 # Load model and encoder
