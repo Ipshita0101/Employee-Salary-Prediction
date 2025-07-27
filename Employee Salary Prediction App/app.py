@@ -4,22 +4,6 @@ import numpy as np
 import pickle
 import gzip
 
-# Mock classes for demo mode
-class MockModel:
-    def predict(self, X):
-        # Simple rule-based prediction for demo
-        return [">50K" if np.random.random() > 0.6 else "<=50K"]
-    
-    def predict_proba(self, X):
-        # Return random probabilities for demo
-        prob_high = np.random.uniform(0.3, 0.9)
-        return [[1-prob_high, prob_high]]
-
-class MockEncoder:
-    def transform(self, X):
-        # Return dummy encoded values
-        return np.random.randint(0, 5, size=X.shape)
-
 # Load model and encoder
 @st.cache_resource
 def load_models():
@@ -29,26 +13,13 @@ def load_models():
 
         with open("model/ordinal_encoder.pkl", "rb") as f:
             encoder = pickle.load(f)
-        return model, encoder, False
-    except FileNotFoundError:
-        # Return demo models without showing error messages here
-        return MockModel(), MockEncoder(), True
+        return model, encoder
+    except FileNotFoundError as e:
+        return None, None
     except Exception as e:
-        # Return demo models for any other error
-        return MockModel(), MockEncoder(), True
+        return None, None
 
-model, encoder, demo_mode = load_models()
-
-# Show status messages after loading
-if demo_mode:
-    st.warning("⚠️ Model files not found. Running in DEMO mode with simulated predictions.")
-    st.info("For real predictions, please ensure the following files exist in your app directory:")
-    st.code("""
-model/
-├── rf_model_compressed.pkl.gz
-└── ordinal_encoder.pkl
-    """)
-    st.markdown("---")
+model, encoder = load_models()
 
 # App setup
 st.set_page_config("Employee Salary Prediction", "💼", layout="wide")
@@ -66,11 +37,10 @@ with st.sidebar:
     st.header("📊 Prediction Settings")
     mode = st.radio("Choose mode:", ["🔍 Predict", "📈 Feature Analysis"])
     
-    if not demo_mode:
+    if model is not None and encoder is not None:
         st.success("✅ Model Loaded Successfully!")
     else:
-        st.info("🎭 Running in DEMO Mode")
-        st.caption("Predictions are simulated")
+        st.error("❌ Models Required!")
 
     st.markdown("### 🎯 Quick Tips")
     st.markdown("""
@@ -82,7 +52,64 @@ with st.sidebar:
 
 # Early stop - only if both model and encoder are None
 if model is None or encoder is None:
-    st.error("❌ Critical error: Unable to load models or initialize demo mode.")
+    st.error("❌ **Model files are required to run this application.**")
+    
+    st.markdown("### 🛠️ **Setup Instructions:**")
+    st.markdown("""
+    **Step 1:** Create the model directory structure:
+    ```
+    your_app_directory/
+    ├── your_streamlit_app.py
+    └── model/
+        ├── rf_model_compressed.pkl.gz
+        └── ordinal_encoder.pkl
+    ```
+    
+    **Step 2:** You need to create these model files by training a machine learning model:
+    
+    - `rf_model_compressed.pkl.gz` - A trained Random Forest model (compressed with gzip)
+    - `ordinal_encoder.pkl` - A fitted ordinal encoder for categorical variables
+    
+    **Step 3:** Here's sample code to create these files:
+    """)
+    
+    st.code("""
+# Sample code to create the required model files
+import pandas as pd
+import pickle
+import gzip
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.model_selection import train_test_split
+
+# Load your dataset (replace with your actual data)
+# df = pd.read_csv('your_dataset.csv')
+
+# Prepare your data
+# X = df.drop('target', axis=1)  # features
+# y = df['target']  # target variable
+
+# Split categorical and numerical columns
+# cat_cols = X.select_dtypes(include='object').columns
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+# Train encoder
+# encoder = OrdinalEncoder()
+# X_train[cat_cols] = encoder.fit_transform(X_train[cat_cols])
+
+# Train model
+# model = RandomForestClassifier(n_estimators=100)
+# model.fit(X_train, y_train)
+
+# Save models
+# with gzip.open('model/rf_model_compressed.pkl.gz', 'wb') as f:
+#     pickle.dump(model, f)
+
+# with open('model/ordinal_encoder.pkl', 'wb') as f:
+#     pickle.dump(encoder, f)
+    """, language='python')
+    
+    st.warning("⚠️ **This app requires trained ML models to function. Please create the model files first.**")
     st.stop()
 
 # --- Predict Mode ---
@@ -129,8 +156,6 @@ if mode == "🔍 Predict":
         confidence = proba[1] * 100 if pred == ">50K" else proba[0] * 100
 
         st.subheader("🎯 Prediction Result")
-        if demo_mode:
-            st.info("🎭 **DEMO MODE** - This is a simulated prediction")
         
         if pred == ">50K":
             st.success("🎉 Income likely > 50K")
