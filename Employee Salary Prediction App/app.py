@@ -4,6 +4,22 @@ import numpy as np
 import pickle
 import gzip
 
+# Mock classes for demo mode
+class MockModel:
+    def predict(self, X):
+        # Simple rule-based prediction for demo
+        return [">50K" if np.random.random() > 0.6 else "<=50K"]
+    
+    def predict_proba(self, X):
+        # Return random probabilities for demo
+        prob_high = np.random.uniform(0.3, 0.9)
+        return [[1-prob_high, prob_high]]
+
+class MockEncoder:
+    def transform(self, X):
+        # Return dummy encoded values
+        return np.random.randint(0, 5, size=X.shape)
+
 # Load model and encoder
 @st.cache_resource
 def load_models():
@@ -13,24 +29,35 @@ def load_models():
 
         with open("model/ordinal_encoder.pkl", "rb") as f:
             encoder = pickle.load(f)
-        return model, encoder
-    except FileNotFoundError as e:
-        st.error(f"Model files not found: {str(e)}")
-        st.info("Please ensure the following files exist:")
-        st.code("""
+        return model, encoder, False
+    except FileNotFoundError:
+        # Return demo models without showing error messages here
+        return MockModel(), MockEncoder(), True
+    except Exception as e:
+        # Return demo models for any other error
+        return MockModel(), MockEncoder(), True
+
+model, encoder, demo_mode = load_models()
+
+# Show status messages after loading
+if demo_mode:
+    st.warning("⚠️ Model files not found. Running in DEMO mode with simulated predictions.")
+    st.info("For real predictions, please ensure the following files exist in your app directory:")
+    st.code("""
 model/
 ├── rf_model_compressed.pkl.gz
 └── ordinal_encoder.pkl
-        """)
-        return None, None
-    except Exception as e:
-        st.error(f"Error loading models: {str(e)}")
-        return None, None
-
-model, encoder = load_models()
+    """)
+    st.markdown("---")
 
 # App setup
 st.set_page_config("Employee Salary Prediction", "💼", layout="wide")
+
+# Add cache clear option for development
+if st.sidebar.button("🔄 Clear Cache & Reload"):
+    st.cache_resource.clear()
+    st.rerun()
+
 st.title("💼 Employee Salary Predictor")
 st.caption("Predict if a person's income is above or below $50K based on demographic and work features.")
 
@@ -39,10 +66,11 @@ with st.sidebar:
     st.header("📊 Prediction Settings")
     mode = st.radio("Choose mode:", ["🔍 Predict", "📈 Feature Analysis"])
     
-    if model is not None and encoder is not None:
+    if not demo_mode:
         st.success("✅ Model Loaded Successfully!")
     else:
-        st.error("❌ Model Loading Failed!")
+        st.info("🎭 Running in DEMO Mode")
+        st.caption("Predictions are simulated")
 
     st.markdown("### 🎯 Quick Tips")
     st.markdown("""
@@ -52,17 +80,9 @@ with st.sidebar:
 - Marital status and occupation matter  
 """)
 
-# Early stop
+# Early stop - only if both model and encoder are None
 if model is None or encoder is None:
-    st.error("❌ Models not loaded successfully. Cannot proceed with predictions.")
-    st.info("💡 **To fix this issue:**")
-    st.markdown("""
-    1. Create a `model/` folder in your app directory
-    2. Place your trained model files in this folder:
-       - `rf_model_compressed.pkl.gz` (your trained RandomForest model)
-       - `ordinal_encoder.pkl` (your fitted encoder)
-    3. Restart the Streamlit app
-    """)
+    st.error("❌ Critical error: Unable to load models or initialize demo mode.")
     st.stop()
 
 # --- Predict Mode ---
@@ -109,6 +129,9 @@ if mode == "🔍 Predict":
         confidence = proba[1] * 100 if pred == ">50K" else proba[0] * 100
 
         st.subheader("🎯 Prediction Result")
+        if demo_mode:
+            st.info("🎭 **DEMO MODE** - This is a simulated prediction")
+        
         if pred == ">50K":
             st.success("🎉 Income likely > 50K")
         else:
