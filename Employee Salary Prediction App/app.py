@@ -3,14 +3,13 @@ import pandas as pd
 import numpy as np
 import pickle
 import gzip
-#import plotly.express as px
-#import plotly.graph_objects as go
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Load model and encoder
 @st.cache_resource
 def load_models():
    
-
     with gzip.open("model/rf_model_compressed.pkl.gz", "rb") as f:
         model = pickle.load(f)
 
